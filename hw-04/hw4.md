@@ -113,3 +113,24 @@ factorial 1
 30> recursion:tail_fac(0).
 1
 ```
+
+# Задание 3.2
+
+*Напишите функцию duplicate/1 и tail_duplicate/1 (используем хвостовую рекурсию)*
+
+*Вызовите функцию из Eshell:*
+recursion:duplicate(X).  %% X -  список элементов\
+recursion:duplicate([]).\
+recursion:tail_duplicate(X).  %% X -  список элементов\
+recursion:tail_duplicate([]).\
+
+```
+32> recursion:duplicate([1,2,3]).
+[1,1,2,2,3,3]
+33> recursion:duplicate([]).
+[]
+34> recursion:tail_duplicate([1,2,3]).
+[1,1,2,2,3,3]
+35> recursion:tail_duplicate([]).
+[]
+```
