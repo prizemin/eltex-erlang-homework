@@ -19,7 +19,7 @@ update(Fun, Persons) ->
 get_average_age(Persons) when length(Persons) > 0 ->
     {AgeSum, PersonsCount} = lists:foldl(
         fun(Person, {AccSum, AccCount}) ->
-            {AccSum + person:age(Person), AccCount + 1}
+            {AccSum + Person#person.age, AccCount + 1}
         end,
         {0,0},
         Persons
