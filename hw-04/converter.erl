@@ -39,7 +39,7 @@ to_rub2({Type, Amount} = Arg) ->
         {usd, Amount} when is_integer(Amount), Amount > 0 -> 
 			io:format("Convert ~p to rub, amount: ~p~n", [usd, Amount]),
 			{ok, 75.5 * Amount};
-		{eruo, Amount} when is_integer(Amount), Amount > 0 -> 
+		{euro, Amount} when is_integer(Amount), Amount > 0 ->
 			io:format("Convert ~p to rub, amount: ~p~n", [euro, Amount]),
 			{ok, 80 * Amount};
 		{lari, Amount} when is_integer(Amount), Amount > 0 -> 
