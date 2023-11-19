@@ -22,8 +22,6 @@ start_link(Name) when is_atom(Name) ->
   register(Name, Pid),
   {ok, Pid}.
 
-
-
 stop(Name) ->
   Name ! stop.
 

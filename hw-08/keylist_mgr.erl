@@ -39,7 +39,7 @@ loop(#state{children = Children} = State) ->
     {From, stop_child, Name} ->
       case proplists:get_value(Name, Children) of
         {_, Pid} when is_pid(Pid) ->
-          keylist:stop(Name),
+          exit(Pid, Name),
           NewState = State#state{children = proplists:delete(Name, Children)},
           From ! {ok, NewState},
           loop(NewState);
@@ -50,6 +50,7 @@ loop(#state{children = Children} = State) ->
 
     stop ->
       io:format("Terminating in state ~p... ~n", [State]),
+
       ok;
 
     {From, get_names} ->
@@ -59,8 +60,12 @@ loop(#state{children = Children} = State) ->
 
     {'EXIT', Pid, Reason} ->
       NewChildren = lists:keydelete(Pid, 2, Children),
-      error_logger:error_msg("Process ~p failed with reason ~p~n: ~p", [Pid, Reason]),
+      Msg = io_lib:format("~nProcess ~p failed with reason: ~p~n", [Pid, Reason]),
+      error_logger:error_msg("~s", [Msg]),
       loop(State#state{children = NewChildren});
+
     {'DOWN', Ref, process, Pid, Reason} ->
-      io:format("Процесс упал по причине: ~p~n", [Reason])
+      io:format("Процесс упал по причине: ~p~n", [Reason]),
+      NewChildren = lists:keydelete(Pid, 2, Children),
+      loop(State#state{children = NewChildren})
   end.
