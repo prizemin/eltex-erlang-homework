@@ -21,8 +21,8 @@
 %% Callbacks
 -export([init/1]).
 -export([handle_call/3]).
--export([handle_cast/2]).
 -export([handle_info/2]).
+-export([terminate/2]).
 
 -record(stateChild,{
   list = []    :: [{atom(), integer(), string()}],
@@ -62,7 +62,7 @@ find(Name, Key) ->
 
 -spec(stop(atom()) -> ok).
 stop(Name) ->
-  gen_server:cast(Name, stop),
+  gen_server:stop(Name),
   ok.
 
 %% Callbacks
@@ -113,16 +113,16 @@ handle_call({_Pid, find, Key},
   case lists:keyfind(Key, 1, List) of
     false ->
       {reply, {no_find}, State};
-    {Key, _Value, _Comment}  = Element->
+    {Key, _Value, _Comment} = Element ->
       io:format("Found element: ~p ~n", [Element]),
       NewState = State#stateChild{counter = Counter + 1},
       {reply, {ok, Element, NewState#stateChild.counter}, State}
   end.
 
-handle_cast(stop, State) ->
-  io:format("Received stop request~n"),
-  {stop, normal, State}.
-
 handle_info({added_new_child, NewPid, NewName}, State) ->
-  io:format("Received added_new_child message. NewPid: ~p, NewName: ~p~n", [NewPid, NewName]),
+  io:format("Received added_new_child message. Pid: ~p, Name: ~p~n", [NewPid, NewName]),
   {noreply, State}.
+
+terminate(Reason, State) ->
+  io:format("Proc ~p terminating reason: ~p in state: ~p~n", [self(), Reason, State]),
+  ok.

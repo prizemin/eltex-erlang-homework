@@ -6,13 +6,13 @@
 %%% adding/removing/searching elements with some information.
 %%% @end
 %%%-------------------------------------------------------------------
--module(keylist_mgr_srv).
+-module(keylist_mgr).
 -author("r0xyz").
 
 -behavior(gen_server).
 
 %% API
--export([start_monitor/0]).
+-export([start_monitor/0, stop/0]).
 -export([start_child/2, stop_child/1]).
 -export([get_names/0]).
 
@@ -21,6 +21,7 @@
 -export([handle_call/3]).
 -export([handle_cast/2]).
 -export([handle_info/2]).
+-export([terminate/2]).
 
 -record(state,{
   children = []   ::[{atom(), pid()}],
@@ -28,17 +29,23 @@
 }).
 
 %% API
-%% @doc Starts keylist_mgr_srv process
+%% @doc Starts keylist_mgr process
 -spec(start_monitor() -> {ok, pid()}).
 start_monitor() ->
   gen_server:start_monitor({local, ?MODULE}, ?MODULE, [], []).
 
-%% @doc Starts child keylist process
+%% @doc Stop keylist_mgr process
+-spec(stop() -> ok).
+stop() ->
+  gen_server:cast(?MODULE, stop),
+  ok.
+
+%% @doc Starts child keylist_srv process
 -spec(start_child(atom(), atom()) -> {ok, pid()}).
 start_child(Name, Type) ->
   gen_server:call(?MODULE, {self(), start_child, {Name, Type}}).
 
-%% @doc Stop child keylist process
+%% @doc Stop child keylist_srv process
 -spec(stop_child(Name::atom()) -> ok).
 stop_child(Name) ->
   gen_server:call(?MODULE, {self(), stop_child, Name}).
@@ -89,7 +96,10 @@ handle_call({_SelfPid, stop_child, Name},
 
 handle_cast({_SelfPid, get_names}, #state{children = Children, permanent = Permanent} = State) ->
   io:format("Children: ~p, Permanent: ~p~n", [Children, Permanent]),
-  {noreply, State}.
+  {noreply, State};
+
+handle_cast(stop, State) ->
+  {stop, normal, State}.
 
 handle_info({'EXIT', FailedPid, Reason}, #state{children = Children, permanent = Permanent} = State) ->
   case lists:keysearch(FailedPid, 2, Children) of
@@ -122,3 +132,7 @@ handle_info({'DOWN', Ref, process, Pid, Reason},
   io:format("Process monitoring ~p completed with reason: ~p~n", [Ref, Reason]),
   NewChildren = lists:filter(fun({_Name, P}) -> P /= Pid end, Children),
   {noreply, State#state{children = NewChildren}}.
+
+terminate(Reason, State) ->
+  io:format("Proc ~p terminating reason: ~p in state: ~p~n", [self(), Reason, State]),
+  ok.
