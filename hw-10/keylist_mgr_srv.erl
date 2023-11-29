@@ -31,7 +31,7 @@
 %% @doc Starts keylist_mgr_srv process
 -spec(start_monitor() -> {ok, pid()}).
 start_monitor() ->
-  gen_server:start_link({local, ?MODULE}, ?MODULE, [], []).
+  gen_server:start_monitor({local, ?MODULE}, ?MODULE, [], []).
 
 %% @doc Starts child keylist process
 -spec(start_child(atom(), atom()) -> {ok, pid()}).
@@ -109,10 +109,16 @@ handle_info({'EXIT', FailedPid, Reason}, #state{children = Children, permanent =
         false ->
           Msg = io_lib:format("~nProcess ~p failed with reason: ~p~n", [Name, Reason]),
           error_logger:error_msg("~s", [Msg]),
-          NewChildren = lists:keydelete(FailedPid, 1, State#state.children),
+          NewChildren = lists:keydelete(FailedPid, 2, Children),
           lists:foreach(fun({_, ChildPid}) -> ChildPid ! {added_new_child, FailedPid, Name} end, NewChildren),
           {noreply, State#state{children = NewChildren}}
       end;
     false ->
       {noreply, State}
-  end.
+  end;
+
+handle_info({'DOWN', Ref, process, Pid, Reason},
+            #state{children = Children} = State) ->
+  io:format("Process monitoring ~p completed with reason: ~p~n", [Ref, Reason]),
+  NewChildren = lists:filter(fun({_Name, P}) -> P /= Pid end, Children),
+  {noreply, State#state{children = NewChildren}}.
