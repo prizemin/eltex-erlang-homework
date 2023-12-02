@@ -38,27 +38,27 @@ start_link(Name) ->
 %% @doc Adds a new tuple element to the #state.list
 %%-spec(add(atom(), atom(), integer(), string()) -> {ok, list()}).
 add(Name, Key, Value, Comment) ->
-  gen_server:call(Name, {self(), add, Key, Value, Comment}).
+  gen_server:call(Name, {add, Key, Value, Comment}).
 
 %% @doc Removes an item with the key Key from the #state.list.
 %%-spec(delete(atom(), atom()) -> {ok, record()}).
 delete(Name, Key) ->
-  gen_server:call(Name, {self(), delete, Key}).
+  gen_server:call(Name, {delete, Key}).
 
 %% @doc Checks if there is an element with the key Key in the #state.list.
 -spec(is_member(atom(), atom()) -> {ok, atom(), non_neg_integer()}).
 is_member(Name, Key) ->
-  gen_server:call(Name, {self(), is_member, Key}).
+  gen_server:call(Name, {is_member, Key}).
 
 %% @doc Finds and returns an element with the key Key and removes it from the list #state.list.
 -spec(take(atom(), atom()) -> {ok, tuple(), non_neg_integer()}).
 take(Name, Key) ->
-  gen_server:call(Name, {self(), take, Key}).
+  gen_server:call(Name, {take, Key}).
 
 %% @doc Finds and returns an element with the key Key from the list.
 -spec(find(atom(), atom()) -> {ok, tuple(), non_neg_integer()}).
 find(Name, Key) ->
-  gen_server:call(Name, {self(), find, Key}).
+  gen_server:call(Name, {find, Key}).
 
 -spec(stop(atom()) -> ok).
 stop(Name) ->
@@ -71,14 +71,14 @@ init([]) ->
   io:format("Process Init: ~n"),
   {ok, #stateChild{}}.
 
-handle_call({_Pid, add, Key, Value, Comment},
+handle_call({add, Key, Value, Comment},
     _From,
     #stateChild{list = List, counter = Counter} = State) ->
   io:format("Added new element: ~p~n", [{Key, Value, Comment}]),
   NewState = State#stateChild{list = List ++ [{Key, Value, Comment}], counter = Counter + 1},
   {reply, {ok, NewState},  NewState};
 
-handle_call({_Pid, delete, Key},
+handle_call({delete, Key},
     _From,
     #stateChild{list = List, counter = Counter} = State) ->
   Element = lists:keyfind(Key, 1, List),
@@ -87,7 +87,7 @@ handle_call({_Pid, delete, Key},
   NewState = State#stateChild{list = NewList, counter = Counter + 1},
   {reply, {ok, NewState}, NewState};
 
-handle_call({_Pid, is_member, Key},
+handle_call({is_member, Key},
     _From,
     #stateChild{list = List, counter = Counter} = State) ->
   IsMember =  lists:keymember(Key, 1, List),
@@ -95,7 +95,7 @@ handle_call({_Pid, is_member, Key},
   NewState = State#stateChild{counter = Counter + 1},
   {reply, {ok, IsMember, NewState#stateChild.counter}, NewState};
 
-handle_call({_Pid, take, Key},
+handle_call({take, Key},
     _From,
     #stateChild{list = List, counter = Counter} = State) ->
   case lists:keytake(Key, 1, List) of
@@ -107,7 +107,7 @@ handle_call({_Pid, take, Key},
       {reply, {ok, Element, NewState#stateChild.counter}, NewState}
   end;
 
-handle_call({_Pid, find, Key},
+handle_call({find, Key},
     _From,
     #stateChild{list = List, counter = Counter} = State) ->
   case lists:keyfind(Key, 1, List) of

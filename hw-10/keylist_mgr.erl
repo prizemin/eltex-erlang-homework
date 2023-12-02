@@ -43,17 +43,17 @@ stop() ->
 %% @doc Starts child keylist_srv process
 -spec(start_child(atom(), atom()) -> {ok, pid()}).
 start_child(Name, Type) ->
-  gen_server:call(?MODULE, {self(), start_child, {Name, Type}}).
+  gen_server:call(?MODULE, {start_child, {Name, Type}}).
 
 %% @doc Stop child keylist_srv process
 -spec(stop_child(Name::atom()) -> ok).
 stop_child(Name) ->
-  gen_server:call(?MODULE, {self(), stop_child, Name}).
+  gen_server:call(?MODULE, {stop_child, Name}).
 
 %% @doc Getting a state
 -spec(get_names() -> ok).
 get_names() ->
-  gen_server:cast(?MODULE, {self(), get_names}).
+  gen_server:cast(?MODULE, {get_names}).
 
 %% Callbacks
 init([]) ->
@@ -61,7 +61,7 @@ init([]) ->
   io:format("Monitor Process Init: "),
   {ok, #state{}}.
 
-handle_call({_SelfPid, start_child, {Name, Type}},
+handle_call({start_child, {Name, Type}},
     _From,
     #state{children = Children, permanent = Permanent} = State) ->
   case proplists:get_value(Name, Children) of
@@ -82,7 +82,7 @@ handle_call({_SelfPid, start_child, {Name, Type}},
       {reply, {error, {already_started, Name}}, State}
   end;
 
-handle_call({_SelfPid, stop_child, Name},
+handle_call({stop_child, Name},
     _From,
     #state{children = Children, permanent = Permanent} = State) ->
   case proplists:get_value(Name, Children) of
@@ -94,7 +94,7 @@ handle_call({_SelfPid, stop_child, Name},
       {reply, {error, {not_started, Name}}, State}
   end.
 
-handle_cast({_SelfPid, get_names}, #state{children = Children, permanent = Permanent} = State) ->
+handle_cast({get_names}, #state{children = Children, permanent = Permanent} = State) ->
   io:format("Children: ~p, Permanent: ~p~n", [Children, Permanent]),
   {noreply, State};
 
