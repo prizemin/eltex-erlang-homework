@@ -124,6 +124,10 @@ handle_call({find, Key}, _From, #cmd_count{counter = Counter} = State) ->
 
 handle_info({added_new_child, NewPid, NewName}, State) ->
   io:format("Received added_new_child message. Pid: ~p, Name: ~p~n", [NewPid, NewName]),
+  {noreply, State};
+
+handle_info({added_newwww_child, NewPid, NewName}, State) ->
+  io:format("Received added_new_child message. Pid: ~p, Name: ~p~n", [NewPid, NewName]),
   {noreply, State}.
 
 terminate(Reason, State) ->
