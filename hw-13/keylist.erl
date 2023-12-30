@@ -135,7 +135,7 @@ handle_call({find, Key}, _From, #cmd_count{counter = Counter} = State) ->
       {reply, not_found, State};
     Element ->
       NewState = State#cmd_count{counter = Counter + 1},
-      {reply, {ok, Element}, NewState}
+      {reply, {ok, Element  }, NewState}
   end;
 
 handle_call({match, Pattern}, _From, #cmd_count{counter = Counter} = State) ->
