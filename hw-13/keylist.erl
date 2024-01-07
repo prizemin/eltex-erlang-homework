@@ -26,7 +26,7 @@
 -export([handle_info/2]).
 -export([terminate/2]).
 
--record(cmd_count,{
+-record(keylist_data,{
   counter = 0  :: non_neg_integer()
 }).
 
@@ -85,16 +85,16 @@ stop(Name) ->
 %% Callbacks
 init([]) ->
   io:format("Child Process Init: ~n"),
-  {ok, #cmd_count{}}.
+  {ok, #keylist_data{}}.
 
-handle_call({add, Key, Value, Comment}, _From, #cmd_count{counter = Counter} = State) ->
+handle_call({add, Key, Value, Comment}, _From, #keylist_data{counter = Counter} = State) ->
   Record = #keylist_rec{key = Key, value = Value, comment = Comment},
   ets:insert(?TABLE_NAME, Record),
   io:format("Added new element to ETS: ~p~n", [{Key, Value, Comment}]),
-  NewState = State#cmd_count{counter = Counter + 1},
-  {reply, {ok, NewState#cmd_count.counter},  NewState};
+  NewState = State#keylist_data{counter = Counter + 1},
+  {reply, {ok, NewState#keylist_data.counter},  NewState};
 
-handle_call({delete, Key}, _From, #cmd_count{counter = Counter} = State) ->
+handle_call({delete, Key}, _From, #keylist_data{counter = Counter} = State) ->
   case ets:lookup(?TABLE_NAME, Key) of
     [] ->
       io:format("Element with the key ~p doesn`t exist in ETS~n", [Key]),
@@ -102,56 +102,56 @@ handle_call({delete, Key}, _From, #cmd_count{counter = Counter} = State) ->
     _Element ->
       ets:delete(?TABLE_NAME, Key),
       io:format("Element(s) with key ~p has been removed from ETS~n", [Key]),
-      NewState = State#cmd_count{counter = Counter + 1},
-      {reply, {ok, NewState#cmd_count.counter}, NewState}
+      NewState = State#keylist_data{counter = Counter + 1},
+      {reply, {ok, NewState#keylist_data.counter}, NewState}
   end;
 
-handle_call({is_member, Key}, _From, #cmd_count{counter = Counter} = State) ->
+handle_call({is_member, Key}, _From, #keylist_data{counter = Counter} = State) ->
   case ets:member(?TABLE_NAME, Key) of
     true ->
       io:format("Element(s) with the key: ~p exist in ETS:~n", [Key]),
-      NewState = State#cmd_count{counter = Counter + 1},
+      NewState = State#keylist_data{counter = Counter + 1},
       {reply, true, NewState};
     false ->
       io:format("Element with the key ~p doesn`t exist in ETS~n", [Key]),
       {reply, false, State}
   end;
 
-handle_call({take, Key}, _From, #cmd_count{counter = Counter} = State) ->
+handle_call({take, Key}, _From, #keylist_data{counter = Counter} = State) ->
   case ets:lookup(?TABLE_NAME, Key) of
     [] ->
       io:format("Element with the key ~p doesn`t exist in ETS~n", [Key]),
       {reply, false, State};
     Element ->
       io:format("Element(s) with key ~p has been removed from ETS~n", [Key]),
-      NewState = State#cmd_count{counter = Counter + 1},
+      NewState = State#keylist_data{counter = Counter + 1},
       {reply, {ok, Element}, NewState}
   end;
 
-handle_call({find, Key}, _From, #cmd_count{counter = Counter} = State) ->
+handle_call({find, Key}, _From, #keylist_data{counter = Counter} = State) ->
   case ets:lookup(?TABLE_NAME, Key) of
     [] ->
       io:format("Element with the key ~p was not found~n", [Key]),
       {reply, not_found, State};
     Element ->
-      NewState = State#cmd_count{counter = Counter + 1},
-      {reply, {ok, Element  }, NewState}
+      NewState = State#keylist_data{counter = Counter + 1},
+      {reply, {ok, Element}, NewState}
   end;
 
-handle_call({match, Pattern}, _From, #cmd_count{counter = Counter} = State) ->
+handle_call({match, Pattern}, _From, #keylist_data{counter = Counter} = State) ->
   MatchResult = ets:match(?TABLE_NAME, Pattern),
-  NewState = State#cmd_count{counter = Counter + 1},
+  NewState = State#keylist_data{counter = Counter + 1},
   {reply, {ok, MatchResult}, NewState};
 
-handle_call({match_object, Pattern}, _From, #cmd_count{counter = Counter} = State) ->
+handle_call({match_object, Pattern}, _From, #keylist_data{counter = Counter} = State) ->
   MatchResult = ets:match_object(?TABLE_NAME, Pattern),
-  NewState = State#cmd_count{counter = Counter + 1},
+  NewState = State#keylist_data{counter = Counter + 1},
   {reply, {ok, MatchResult}, NewState};
 
-handle_call({select, Filter}, _From, #cmd_count{counter = Counter} = State) ->
+handle_call({select, Filter}, _From, #keylist_data{counter = Counter} = State) ->
   MS = ets:fun2ms(Filter),
   MatchResult = ets:select(?TABLE_NAME, MS),
-  NewState = State#cmd_count{counter = Counter + 1},
+  NewState = State#keylist_data{counter = Counter + 1},
   {reply, {ok, MatchResult}, NewState}.
 
 handle_info({added_new_child, NewPid, NewName}, State) ->

@@ -26,7 +26,7 @@
 -export([handle_info/2]).
 -export([terminate/2]).
 
--record(state,{
+-record(mgr_state,{
   children = []   ::[{atom(), pid()}],
   permanent = []  ::[pid()]
 }).
@@ -64,11 +64,11 @@ init([]) ->
   Tid = ets:new(?TABLE_NAME, [named_table, duplicate_bag, public, {keypos, #keylist_rec.key}]),
   io:format("Monitor Process Init: ~n"),
   io:format("ETS table created, name: ~p~n", [Tid]),
-  {ok, #state{children = [], permanent = []}}.
+  {ok, #mgr_state{children = [], permanent = []}}.
 
 handle_call({start_child, {Name, Type}},
     _From,
-    #state{children = Children, permanent = Permanent} = State) ->
+    #mgr_state{children = Children, permanent = Permanent} = State) ->
   case proplists:get_value(Name, Children) of
     undefined ->
       {ok, Pid} = keylist:start_link(Name),
@@ -78,7 +78,7 @@ handle_call({start_child, {Name, Type}},
           temporary -> Permanent
         end,
       NewChildren = Children ++ [{Name, Pid}],
-      NewState = State#state{children = NewChildren, permanent = NewPermanent},
+      NewState = State#mgr_state{children = NewChildren, permanent = NewPermanent},
       lists:foreach(fun({_, ChildPid}) -> ChildPid ! {added_new_child, Pid, Name} end, Children),
       {reply, {ok, Pid}, NewState};
     Pid when is_pid(Pid) ->
@@ -89,24 +89,24 @@ handle_call({start_child, {Name, Type}},
 
 handle_call({stop_child, Name},
     _From,
-    #state{children = Children, permanent = Permanent} = State) ->
+    #mgr_state{children = Children, permanent = Permanent} = State) ->
   case proplists:get_value(Name, Children) of
     Pid when is_pid(Pid) ->
       keylist_srv:stop(Name),
-      NewState = State#state{children = proplists:delete(Name, Children), permanent = lists:delete(Pid, Permanent)},
+      NewState = State#mgr_state{children = proplists:delete(Name, Children), permanent = lists:delete(Pid, Permanent)},
       {reply, ok, NewState};
     undefined ->
       {reply, {error, {not_started, Name}}, State}
   end.
 
-handle_cast({get_names}, #state{children = Children, permanent = Permanent} = State) ->
+handle_cast({get_names}, #mgr_state{children = Children, permanent = Permanent} = State) ->
   io:format("Children: ~p, Permanent: ~p~n", [Children, Permanent]),
   {noreply, State};
 
 handle_cast(stop, State) ->
   {stop, normal, State}.
 
-handle_info({'EXIT', FailedPid, Reason}, #state{children = Children, permanent = Permanent} = State) ->
+handle_info({'EXIT', FailedPid, Reason}, #mgr_state{children = Children, permanent = Permanent} = State) ->
   case lists:keysearch(FailedPid, 2, Children) of
     {value, {Name, _}} ->
       case lists:member(FailedPid, Permanent) of
@@ -120,23 +120,23 @@ handle_info({'EXIT', FailedPid, Reason}, #state{children = Children, permanent =
           NewPermanent = [NewPid | DelPermanent],
           NewChildren = [{Name, NewPid} | DelChildren],
           lists:foreach(fun({_, ChildPid}) -> ChildPid ! {added_new_child, NewPid, Name} end, NewChildren),
-          {noreply, State#state{children = NewChildren, permanent = NewPermanent}};
+          {noreply, State#mgr_state{children = NewChildren, permanent = NewPermanent}};
         false ->
           Msg = io_lib:format("~nProcess ~p failed with reason: ~p~n", [Name, Reason]),
           error_logger:error_msg("~s", [Msg]),
           NewChildren = lists:keydelete(FailedPid, 2, Children),
           lists:foreach(fun({_, ChildPid}) -> ChildPid ! {added_new_child, FailedPid, Name} end, NewChildren),
-          {noreply, State#state{children = NewChildren}}
+          {noreply, State#mgr_state{children = NewChildren}}
       end;
     false ->
       {noreply, State}
   end;
 
 handle_info({'DOWN', Ref, process, Pid, Reason},
-    #state{children = Children} = State) ->
+    #mgr_state{children = Children} = State) ->
   io:format("Process monitoring ~p completed with reason: ~p~n", [Ref, Reason]),
   NewChildren = lists:filter(fun({_Name, P}) -> P /= Pid end, Children),
-  {noreply, State#state{children = NewChildren}}.
+  {noreply, State#mgr_state{children = NewChildren}}.
 
 terminate(Reason, State) ->
   io:format("Proc ~p terminating reason: ~p in state: ~p~n", [self(), Reason, State]),
