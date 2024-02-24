@@ -12,7 +12,7 @@ RUN apk add --no-cache git build-base
 COPY . webRtp
 
 # And build the release
-WORKDIR /buildroot/webRtp
+WORKDIR webRtp
 
 RUN rebar3 as prod release
 
@@ -29,24 +29,13 @@ RUN apk add git && \
     apk add --no-cache ortp-dev && \
     apk add --no-cache bctoolbox-dev
 
-WORKDIR /buildroot
-RUN mkdir /c_src
-# Копируем мейкфайл из локальной файловой системы внутрь контейнера
-COPY ./c_src/Makefile /buildroot/webRtp/c_src/Makefile
+COPY --from=0 /buildroot/webRtp/apps/webRtp/priv /webRtp/priv/
 
-# Копируем исходный файл rtpsend.c
-COPY ./c_src/rtpsend.c /buildroot/webRtp/c_src/rtpsend.c
+COPY --from=0 /buildroot/webRtp/c_src /webRtp/c_src
 
-# Устанавливаем рабочий каталог
-WORKDIR /buildroot/webRtp/c_src
-
-# Выполняем команду make для сборки
-RUN make
-
-# Install the released application
-WORKDIR /buildroot/webRtp
 COPY --from=0 /buildroot/webRtp/_build/prod/rel/webRtp /webRtp
 
+RUN make -C /webRtp/c_src
 # Expose relevant ports
 EXPOSE 8443
 
